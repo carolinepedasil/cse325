@@ -1,0 +1,139 @@
+@page "/habits"
+@using WellnessTracker.Models
+@using WellnessTracker.Services
+@using System.ComponentModel.DataAnnotations
+@inject IHabitEntryService HabitService
+
+<PageTitle>Habits</PageTitle>
+
+<h1>Daily Wellness Entries</h1>
+
+<p>Use this page to log your daily exercise, sleep, hydration, and mood.</p>
+
+<EditForm Model="@newEntry" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Date</label><br />
+        <InputDate @bind-Value="newEntry.Date" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Exercise (minutes)</label><br />
+        <InputNumber @bind-Value="newEntry.ExerciseMinutes" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Sleep (hours)</label><br />
+        <InputNumber @bind-Value="newEntry.SleepHours" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Water (liters)</label><br />
+        <InputNumber @bind-Value="newEntry.WaterLiters" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Mood</label><br />
+        <InputText @bind-Value="newEntry.Mood" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Notes</label><br />
+        <InputTextArea @bind-Value="newEntry.Notes" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Entry</button>
+</EditForm>
+
+<hr />
+
+@if (entries is null || entries.Count == 0)
+{
+    <p>No entries yet. Add your first wellness entry above.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Exercise (min)</th>
+                <th>Sleep (hrs)</th>
+                <th>Water (L)</th>
+                <th>Mood</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries)
+            {
+                <tr>
+                    <td>@entry.Date.ToShortDateString()</td>
+                    <td>@entry.ExerciseMinutes</td>
+                    <td>@entry.SleepHours</td>
+                    <td>@entry.WaterLiters</td>
+                    <td>@entry.Mood</td>
+                    <td>@entry.Notes</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private HabitEntryFormModel newEntry = new()
+    {
+        Date = DateTime.Today
+    };
+
+    private List<HabitEntry> entries = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        entries = await HabitService.GetAllAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var entry = new HabitEntry
+        {
+            Date = newEntry.Date,
+            ExerciseMinutes = newEntry.ExerciseMinutes,
+            SleepHours = newEntry.SleepHours,
+            WaterLiters = newEntry.WaterLiters,
+            Mood = newEntry.Mood,
+            Notes = newEntry.Notes
+        };
+
+        await HabitService.AddAsync(entry);
+        entries = await HabitService.GetAllAsync();
+
+        newEntry = new HabitEntryFormModel
+        {
+            Date = DateTime.Today
+        };
+    }
+
+    public class HabitEntryFormModel
+    {
+        [Required]
+        public DateTime Date { get; set; }
+
+        [Range(0, 600)]
+        public int ExerciseMinutes { get; set; }
+
+        [Range(0, 24)]
+        public double SleepHours { get; set; }
+
+        [Range(0, 20)]
+        public double WaterLiters { get; set; }
+
+        [MaxLength(100)]
+        public string Mood { get; set; } = string.Empty;
+
+        [MaxLength(500)]
+        public string? Notes { get; set; }
+    }
+}
