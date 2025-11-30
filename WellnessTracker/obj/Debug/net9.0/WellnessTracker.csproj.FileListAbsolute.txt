@@ -76,3 +76,4 @@ C:\Users\carol\cse325\WellnessTracker\obj\Debug\net9.0\refint\WellnessTracker.dl
 C:\Users\carol\cse325\WellnessTracker\obj\Debug\net9.0\WellnessTracker.pdb
 C:\Users\carol\cse325\WellnessTracker\obj\Debug\net9.0\WellnessTracker.genruntimeconfig.cache
 C:\Users\carol\cse325\WellnessTracker\obj\Debug\net9.0\ref\WellnessTracker.dll
+C:\Users\carol\cse325\WellnessTracker\obj\Debug\net9.0\WellnessTracker.sourcelink.json

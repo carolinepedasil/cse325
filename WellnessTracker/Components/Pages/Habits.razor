@@ -1,7 +1,10 @@
 @page "/habits"
+@rendermode InteractiveServer
+
 @using WellnessTracker.Models
 @using WellnessTracker.Services
 @using System.ComponentModel.DataAnnotations
+@using System.Linq
 @inject IHabitEntryService HabitService
 
 <PageTitle>Habits</PageTitle>
@@ -10,46 +13,73 @@
 
 <p>Use this page to log your daily exercise, sleep, hydration, and mood.</p>
 
-<EditForm Model="@newEntry" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<div class="card mb-4 p-3">
 
     <div class="mb-3">
         <label>Date</label><br />
-        <InputDate @bind-Value="newEntry.Date" class="form-control" />
+        <InputDate @bind-Value="formModel.Date" class="form-control" />
     </div>
 
     <div class="mb-3">
         <label>Exercise (minutes)</label><br />
-        <InputNumber @bind-Value="newEntry.ExerciseMinutes" class="form-control" />
+        <InputNumber @bind-Value="formModel.ExerciseMinutes" class="form-control" />
     </div>
 
     <div class="mb-3">
         <label>Sleep (hours)</label><br />
-        <InputNumber @bind-Value="newEntry.SleepHours" class="form-control" />
+        <InputNumber @bind-Value="formModel.SleepHours" class="form-control" />
     </div>
 
     <div class="mb-3">
         <label>Water (liters)</label><br />
-        <InputNumber @bind-Value="newEntry.WaterLiters" class="form-control" />
+        <InputNumber @bind-Value="formModel.WaterLiters" class="form-control" />
     </div>
 
     <div class="mb-3">
         <label>Mood</label><br />
-        <InputText @bind-Value="newEntry.Mood" class="form-control" />
+        <InputText @bind-Value="formModel.Mood" class="form-control" />
     </div>
 
     <div class="mb-3">
         <label>Notes</label><br />
-        <InputTextArea @bind-Value="newEntry.Notes" class="form-control" />
+        <InputTextArea @bind-Value="formModel.Notes" class="form-control" />
     </div>
 
-    <button type="submit" class="btn btn-primary">Add Entry</button>
-</EditForm>
+    <button class="btn btn-primary me-2" @onclick="HandleSave">
+        @(editingId.HasValue ? "Save changes" : "Add entry")
+    </button>
+
+    @if (editingId.HasValue)
+    {
+        <button class="btn btn-secondary" @onclick="CancelEdit">
+            Cancel
+        </button>
+    }
+</div>
 
 <hr />
 
-@if (entries is null || entries.Count == 0)
+<h3>Summary (based on all entries)</h3>
+
+@if (entries.Count == 0)
+{
+    <p>No entries yet.</p>
+}
+else
+{
+    <ul>
+        <li>Total entries: @entries.Count</li>
+        <li>Total exercise minutes: @entries.Sum(e => e.ExerciseMinutes)</li>
+        <li>Average sleep hours: @entries.Average(e => e.SleepHours).ToString("0.0")</li>
+        <li>Average water (liters): @entries.Average(e => e.WaterLiters).ToString("0.0")</li>
+    </ul>
+}
+
+<hr />
+
+<h3>All entries</h3>
+
+@if (entries.Count == 0)
 {
     <p>No entries yet. Add your first wellness entry above.</p>
 }
@@ -64,6 +94,7 @@ else
                 <th>Water (L)</th>
                 <th>Mood</th>
                 <th>Notes</th>
+                <th style="width: 160px;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -76,6 +107,14 @@ else
                     <td>@entry.WaterLiters</td>
                     <td>@entry.Mood</td>
                     <td>@entry.Notes</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-2" @onclick="() => StartEdit(entry.Id)">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteEntry(entry.Id)">
+                            Delete
+                        </button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -83,37 +122,102 @@ else
 }
 
 @code {
-    private HabitEntryFormModel newEntry = new()
+    private HabitEntryFormModel formModel = new()
     {
         Date = DateTime.Today
     };
 
     private List<HabitEntry> entries = new();
+    private int? editingId;
 
     protected override async Task OnInitializedAsync()
     {
         entries = await HabitService.GetAllAsync();
     }
 
-    private async Task HandleValidSubmit()
+    private async Task HandleSave()
     {
-        var entry = new HabitEntry
+        // Simples "validação manual"
+        if (formModel.SleepHours < 0 || formModel.SleepHours > 24)
         {
-            Date = newEntry.Date,
-            ExerciseMinutes = newEntry.ExerciseMinutes,
-            SleepHours = newEntry.SleepHours,
-            WaterLiters = newEntry.WaterLiters,
-            Mood = newEntry.Mood,
-            Notes = newEntry.Notes
-        };
+            return;
+        }
 
-        await HabitService.AddAsync(entry);
+        if (editingId.HasValue)
+        {
+            // update existing
+            var updated = new HabitEntry
+            {
+                Id = editingId.Value,
+                Date = formModel.Date,
+                ExerciseMinutes = formModel.ExerciseMinutes,
+                SleepHours = formModel.SleepHours,
+                WaterLiters = formModel.WaterLiters,
+                Mood = formModel.Mood,
+                Notes = formModel.Notes
+            };
+
+            await HabitService.UpdateAsync(updated);
+        }
+        else
+        {
+            var entry = new HabitEntry
+            {
+                Date = formModel.Date,
+                ExerciseMinutes = formModel.ExerciseMinutes,
+                SleepHours = formModel.SleepHours,
+                WaterLiters = formModel.WaterLiters,
+                Mood = formModel.Mood,
+                Notes = formModel.Notes
+            };
+
+            await HabitService.AddAsync(entry);
+        }
+
         entries = await HabitService.GetAllAsync();
 
-        newEntry = new HabitEntryFormModel
+        formModel = new HabitEntryFormModel
         {
             Date = DateTime.Today
         };
+        editingId = null;
+    }
+
+    private async Task StartEdit(int id)
+    {
+        var entry = await HabitService.GetByIdAsync(id);
+        if (entry is null) return;
+
+        editingId = entry.Id;
+        formModel = new HabitEntryFormModel
+        {
+            Date = entry.Date,
+            ExerciseMinutes = entry.ExerciseMinutes,
+            SleepHours = entry.SleepHours,
+            WaterLiters = entry.WaterLiters,
+            Mood = entry.Mood,
+            Notes = entry.Notes
+        };
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+        formModel = new HabitEntryFormModel
+        {
+            Date = DateTime.Today
+        };
+    }
+
+    private async Task DeleteEntry(int id)
+    {
+        await HabitService.DeleteAsync(id);
+        entries = await HabitService.GetAllAsync();
+
+        if (editingId == id)
+        {
+            CancelEdit();
+        }
     }
 
     public class HabitEntryFormModel

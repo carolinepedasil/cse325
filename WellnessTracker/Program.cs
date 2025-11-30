@@ -10,6 +10,8 @@ builder.Services.AddScoped<IHabitEntryService, InMemoryHabitEntryService>();
 
 var app = builder.Build();
 
+app.MapGet("/healthz", () => Results.Ok("OK"));
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
