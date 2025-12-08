@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WellnessTracker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e6beddd7ef10f4b1f95b6b26cefefc02c305682a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5360807498ff7b95f33152bbde31b97f0171ad38")]
 [assembly: System.Reflection.AssemblyProductAttribute("WellnessTracker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WellnessTracker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,7 +1,106 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Wellness Tracker</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container py-4">
 
-Welcome to your new app.
+    <div class="row align-items-center mb-5">
+        <div class="col-lg-7">
+            <h1 class="display-4 mb-3">
+                Welcome to <span class="text-primary">Wellness Tracker</span>
+            </h1>
+
+            <p class="lead">
+                Track your daily habits, see your progress over time, and set goals
+                to build a healthier routine.
+            </p>
+
+            <AuthorizeView>
+                <Authorized>
+                    <p class="mb-3">
+                        You're logged in — jump back into your wellness journey:
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary me-2 mb-2"
+                                @onclick="@(() => Nav.NavigateTo("habits"))">
+                            View habits
+                        </button>
+
+                        <button class="btn btn-outline-primary me-2 mb-2"
+                                @onclick="@(() => Nav.NavigateTo("dashboard"))">
+                            Open dashboard
+                        </button>
+
+                        <button class="btn btn-outline-secondary mb-2"
+                                @onclick="@(() => Nav.NavigateTo("goals"))">
+                            Manage goals
+                        </button>
+                    </div>
+                </Authorized>
+
+                <NotAuthorized>
+                    <p class="mb-3">
+                        Create a free account to start tracking your exercise, sleep,
+                        water intake, and mood.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary me-2 mb-2"
+                                @onclick="@(() => Nav.NavigateTo("account/register"))">
+                            Get started
+                        </button>
+
+                        <button class="btn btn-outline-secondary mb-2"
+                                @onclick="@(() => Nav.NavigateTo("account/login"))">
+                            Log in
+                        </button>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+
+        <div class="col-lg-5 mt-4 mt-lg-0">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">What can you track?</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">✔ Daily exercise minutes</li>
+                        <li class="mb-2">✔ Hours of sleep</li>
+                        <li class="mb-2">✔ Water intake (liters)</li>
+                        <li class="mb-2">✔ Mood and quick notes</li>
+                        <li class="mb-0">✔ Progress toward your custom goals</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="row text-center mt-4">
+        <div class="col-md-4 mb-4">
+            <h5>Log habits in seconds</h5>
+            <p class="text-muted mb-0">
+                Quickly record your daily habits so you can focus on living, not on data entry.
+            </p>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <h5>Visual dashboard</h5>
+            <p class="text-muted mb-0">
+                See charts and summaries that help you understand your trends week by week.
+            </p>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <h5>Set meaningful goals</h5>
+            <p class="text-muted mb-0">
+                Define exercise, sleep, or water goals and track how close you are to reaching them.
+            </p>
+        </div>
+    </div>
+</div>

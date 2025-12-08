@@ -1,0 +1,15 @@
+@page "/account/logout"
+@rendermode InteractiveServer
+
+@inject CurrentUserState CurrentUserState
+@inject NavigationManager Nav
+
+<p>Logging out...</p>
+
+@code {
+    protected override void OnInitialized()
+    {
+        CurrentUserState.SetUser(null);
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+}

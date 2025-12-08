@@ -1,0 +1,78 @@
+@page "/account/login"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Authorization
+@using WellnessTracker.Services
+@inject UserManager<IdentityUser> UserManager
+@inject CustomAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>Login</PageTitle>
+
+<h1>Login</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<EditForm Model="Input" OnValidSubmit="HandleLogin" FormName="loginForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label" for="email">Email</label>
+        <InputText id="email" class="form-control" @bind-Value="Input.Email" />
+        <ValidationMessage For="@(() => Input.Email)" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="password">Password</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="Input.Password" />
+        <ValidationMessage For="@(() => Input.Password)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Log in
+    </button>
+</EditForm>
+
+@code {
+    private LoginInputModel Input { get; set; } = new();
+    private string? errorMessage;
+
+    public class LoginInputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+        if (user is null)
+        {
+            errorMessage = "Invalid login attempt.";
+            return;
+        }
+
+        var valid = await UserManager.CheckPasswordAsync(user, Input.Password);
+        if (!valid)
+        {
+            errorMessage = "Invalid login attempt.";
+            return;
+        }
+
+        AuthStateProvider.NotifyUserAuthentication(user);
+
+        Nav.NavigateTo("/habits");
+    }
+}

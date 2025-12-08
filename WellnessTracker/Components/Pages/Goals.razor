@@ -1,0 +1,235 @@
+@page "/goals"
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.ComponentModel.DataAnnotations
+@using WellnessTracker.Models
+@using WellnessTracker.Services
+@inject IGoalService GoalService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Goals</PageTitle>
+
+<AuthorizeView>
+    <Authorized Context="authState">
+        @if (isLoading)
+        {
+            <p>Loading goals...</p>
+        }
+        else
+        {
+            <h1>Personal Goals</h1>
+            <p class="text-muted">Set goals to support your wellness habits.</p>
+
+            <section class="card mb-4 p-3" aria-label="Create or edit goal">
+                <EditForm Model="@formModel" OnValidSubmit="HandleSave">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label for="title">Title</label>
+                        <InputText id="title" @bind-Value="formModel.Title" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="category">Category</label>
+                        <InputSelect id="category" @bind-Value="formModel.Category" class="form-select">
+                            <option value="">Select...</option>
+                            <option>Exercise</option>
+                            <option>Sleep</option>
+                            <option>Water</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="target">Target value</label>
+                        <InputNumber id="target" @bind-Value="formModel.TargetValue" class="form-control" />
+                        <small class="form-text text-muted">
+                            For exercise use minutes, for sleep use hours, for water use liters.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="period">Period</label>
+                        <InputSelect id="period" @bind-Value="formModel.Period" class="form-select">
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                        </InputSelect>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary me-2">
+                        @(editingId.HasValue ? "Save changes" : "Add goal")
+                    </button>
+
+                    @if (editingId.HasValue)
+                    {
+                        <button type="button" class="btn btn-secondary" @onclick="CancelEdit">
+                            Cancel
+                        </button>
+                    }
+                </EditForm>
+            </section>
+
+            <section aria-label="Current goals">
+                @if (goals.Count == 0)
+                {
+                    <p>You do not have any active goals yet.</p>
+                }
+                else
+                {
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Target</th>
+                                <th>Period</th>
+                                <th>Created</th>
+                                <th style="width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var goal in goals)
+                            {
+                                <tr>
+                                    <td>@goal.Title</td>
+                                    <td>@goal.Category</td>
+                                    <td>@goal.TargetValue</td>
+                                    <td>@goal.Period</td>
+                                    <td>@goal.CreatedAt.ToShortDateString()</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary me-2" @onclick="() => StartEdit(goal.Id)">
+                                            Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteGoal(goal.Id)">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </section>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>You need to log in to manage your goals.</p>
+        <NavLink href="account/login" class="btn btn-primary">Go to login</NavLink>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? userId;
+    private bool isLoading = true;
+
+    private List<Goal> goals = new();
+    private GoalFormModel formModel = new();
+    private int? editingId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            isLoading = false;
+            return;
+        }
+
+        await LoadGoalsAsync();
+        isLoading = false;
+    }
+
+    private async Task LoadGoalsAsync()
+    {
+        if (userId is null) return;
+        goals = await GoalService.GetAllAsync(userId);
+    }
+
+    private async Task HandleSave()
+    {
+        if (userId is null) return;
+
+        if (editingId.HasValue)
+        {
+            var existing = await GoalService.GetByIdAsync(editingId.Value, userId);
+            if (existing is null) return;
+
+            existing.Title = formModel.Title;
+            existing.Category = formModel.Category;
+            existing.TargetValue = formModel.TargetValue;
+            existing.Period = formModel.Period;
+
+            await GoalService.UpdateAsync(existing);
+        }
+        else
+        {
+            var goal = new Goal
+            {
+                UserId = userId!,
+                Title = formModel.Title,
+                Category = formModel.Category,
+                TargetValue = formModel.TargetValue,
+                Period = formModel.Period
+            };
+
+            await GoalService.AddAsync(goal);
+        }
+
+        await LoadGoalsAsync();
+        formModel = new GoalFormModel();
+        editingId = null;
+    }
+
+    private async Task StartEdit(int id)
+    {
+        if (userId is null) return;
+        var goal = await GoalService.GetByIdAsync(id, userId);
+        if (goal is null) return;
+
+        editingId = goal.Id;
+        formModel = new GoalFormModel
+        {
+            Title = goal.Title,
+            Category = goal.Category,
+            TargetValue = goal.TargetValue,
+            Period = goal.Period
+        };
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+        formModel = new GoalFormModel();
+    }
+
+    private async Task DeleteGoal(int id)
+    {
+        if (userId is null) return;
+        await GoalService.DeleteAsync(id, userId);
+        await LoadGoalsAsync();
+        if (editingId == id)
+        {
+            CancelEdit();
+        }
+    }
+
+    public class GoalFormModel
+    {
+        [Required]
+        [MaxLength(100)]
+        public string Title { get; set; } = string.Empty;
+
+        [Required]
+        public string Category { get; set; } = string.Empty;
+
+        [Range(0, 1000)]
+        public double TargetValue { get; set; }
+
+        [Required]
+        public string Period { get; set; } = "Weekly";
+    }
+}
