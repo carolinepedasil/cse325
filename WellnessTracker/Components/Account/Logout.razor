@@ -1,15 +1,25 @@
 @page "/account/logout"
 @rendermode InteractiveServer
 
-@inject CurrentUserState CurrentUserState
+@using Microsoft.AspNetCore.Components.Authorization
+@using WellnessTracker.Services
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
-<p>Logging out...</p>
+<PageTitle>Log out</PageTitle>
+
+<h3>Logging out...</h3>
 
 @code {
-    protected override void OnInitialized()
+    protected override Task OnInitializedAsync()
     {
-        CurrentUserState.SetUser(null);
+        if (AuthStateProvider is CustomAuthenticationStateProvider customProvider)
+        {
+            customProvider.NotifyUserLogout();
+        }
+
         Nav.NavigateTo("/", forceLoad: true);
+
+        return Task.CompletedTask;
     }
 }

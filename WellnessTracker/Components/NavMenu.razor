@@ -1,5 +1,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
+@rendermode InteractiveServer
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="top-row ps-3 navbar navbar-dark bg-dark">
     <div class="container-fluid">
@@ -19,16 +21,16 @@
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="habits">
-                <span class="bi bi-journal-check" aria-hidden="true"></span>
-                <span class="ms-1">Habits</span>
+            <NavLink class="nav-link" href="dashboard">
+                <span class="bi bi-bar-chart-line" aria-hidden="true"></span>
+                <span class="ms-1">Dashboard</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="dashboard">
-                <span class="bi bi-bar-chart-line" aria-hidden="true"></span>
-                <span class="ms-1">Dashboard</span>
+            <NavLink class="nav-link" href="habits">
+                <span class="bi bi-journal-check" aria-hidden="true"></span>
+                <span class="ms-1">Habits</span>
             </NavLink>
         </div>
 
@@ -42,10 +44,12 @@
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="account/logout">
+                    <button type="button"
+                            class="nav-link btn btn-link p-0 text-start"
+                            @onclick="Logout">
                         <span class="bi bi-box-arrow-right" aria-hidden="true"></span>
                         <span class="ms-1">Log out</span>
-                    </NavLink>
+                    </button>
                 </div>
             </Authorized>
             <NotAuthorized>
@@ -65,3 +69,15 @@
         </AuthorizeView>
     </nav>
 </div>
+
+@code {
+    private void Logout()
+    {
+        if (AuthStateProvider is WellnessTracker.Services.CustomAuthenticationStateProvider customProvider)
+        {
+            customProvider.NotifyUserLogout();
+        }
+
+        Nav.NavigateTo("/");
+    }
+}

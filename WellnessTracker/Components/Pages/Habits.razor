@@ -1,8 +1,10 @@
 @page "/habits"
 @rendermode InteractiveServer
 
+@using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @using WellnessTracker.Models
 @using WellnessTracker.Services
 @inject IHabitEntryService HabitService
@@ -20,14 +22,15 @@
         {
             <h1>Daily Wellness Entries</h1>
 
+            <!-- FILTER SECTION -->
             <section aria-label="Filter by date" class="mb-3">
                 <div class="row g-2">
                     <div class="col-12 col-md-3">
-                        <label for="startDate">Start date</label>
+                        <label for="startDate" class="form-label">Start date</label>
                         <InputDate id="startDate" @bind-Value="startDate" class="form-control" />
                     </div>
                     <div class="col-12 col-md-3">
-                        <label for="endDate">End date</label>
+                        <label for="endDate" class="form-label">End date</label>
                         <InputDate id="endDate" @bind-Value="endDate" class="form-control" />
                     </div>
                     <div class="col-12 col-md-3 d-flex align-items-end">
@@ -37,9 +40,125 @@
                 </div>
             </section>
 
+            <!-- ADD / EDIT ENTRY FORM -->
             <section class="card mb-4 p-3" aria-label="Add or edit wellness entry">
+                <h2 class="h4">
+                    @(editingId.HasValue ? "Edit daily entry" : "Add new daily entry")
+                </h2>
+
+                <EditForm Model="@formModel" OnValidSubmit="@HandleSave">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label" for="entryDate">Date</label>
+                            <InputDate id="entryDate" class="form-control" @bind-Value="formModel.Date" />
+                        </div>
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label" for="exercise">Exercise (minutes)</label>
+                            <InputNumber id="exercise"
+                                         class="form-control"
+                                         @bind-Value="formModel.ExerciseMinutes" />
+                        </div>
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label" for="sleep">Sleep (hours)</label>
+                            <InputNumber id="sleep"
+                                         class="form-control"
+                                         @bind-Value="formModel.SleepHours" />
+                        </div>
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label" for="water">Water (liters)</label>
+                            <InputNumber id="water"
+                                         class="form-control"
+                                         @bind-Value="formModel.WaterLiters" />
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="mood">Mood</label>
+                            <InputText id="mood"
+                                       class="form-control"
+                                       @bind-Value="formModel.Mood" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label" for="notes">Notes</label>
+                            <InputTextArea id="notes"
+                                           class="form-control"
+                                           @bind-Value="formModel.Notes" />
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary me-2">
+                            @(editingId.HasValue ? "Save changes" : "Save entry")
+                        </button>
+
+                        @if (editingId.HasValue)
+                        {
+                            <button type="button" class="btn btn-secondary me-2" @onclick="CancelEdit">
+                                Cancel
+                            </button>
+                        }
+                    </div>
+                </EditForm>
             </section>
 
+            <!-- ENTRIES TABLE -->
+            <section aria-label="Existing wellness entries">
+                <h2 class="h4">Entries</h2>
+
+                @if (entries.Count == 0)
+                {
+                    <p class="text-muted">No entries found for the selected period.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Exercise (min)</th>
+                                    <th scope="col">Sleep (hrs)</th>
+                                    <th scope="col">Water (L)</th>
+                                    <th scope="col">Mood</th>
+                                    <th scope="col">Notes</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in entries.OrderByDescending(e => e.Date))
+                                {
+                                    <tr>
+                                        <td>@entry.Date.ToString("yyyy-MM-dd")</td>
+                                        <td>@entry.ExerciseMinutes</td>
+                                        <td>@entry.SleepHours</td>
+                                        <td>@entry.WaterLiters</td>
+                                        <td>@entry.Mood</td>
+                                        <td>@entry.Notes</td>
+                                        <td>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary me-2"
+                                                    @onclick="() => StartEdit(entry.Id)">
+                                                Edit
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => DeleteEntry(entry.Id)">
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
         }
     </Authorized>
     <NotAuthorized>

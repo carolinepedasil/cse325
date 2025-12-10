@@ -17,13 +17,14 @@ namespace WellnessTracker.Services
         {
             ClaimsIdentity identity;
 
-            if (_session.IsAuthenticated)
+            if (_session.IsAuthenticated && !string.IsNullOrEmpty(_session.UserId))
             {
+                // User is logged in
                 identity = new ClaimsIdentity(new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, _session.UserId!),
-                    new Claim(ClaimTypes.Name, _session.Email ?? string.Empty)
-                }, authenticationType: "CustomAuth");
+                    new Claim(ClaimTypes.Name, _session.Email ?? _session.UserId!)
+                }, authenticationType: "BlazorAuth");
             }
             else
             {
